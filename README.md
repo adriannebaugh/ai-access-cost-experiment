@@ -1,5 +1,7 @@
 # AI Access Cost Experiment
 
+AI Access Cost Experiment: Genie vs. AI-Assisted CLI using Virtual Pet Adoption Center dataset.
+
 A headless experiment harness for comparing AI-assisted CLI/SQL with Genie, and later MCP, using a synthetic Virtual Pet Adoption Center dataset. The repository starts with a local SQLite reference path so the question set and cost ledger can be exercised without cloud credentials.
 
 ## Quick Start
