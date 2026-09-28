@@ -4,6 +4,11 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .env
+.env.*
+!.env.example
+.sf/
+.sfdx/
+.databrickscfg
 .experiment/
 *.sqlite
 *.sqlite3

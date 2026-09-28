@@ -1,0 +1,39 @@
+{
+  "servers": {
+    "salesforceHeadless360": {
+      "type": "http",
+      "url": "https://api.salesforce.com/platform/mcp/v1/platform/headless-360",
+      "oauth": {
+        "clientId": "${input:salesforce-client-id}"
+      }
+    },
+    "databricksGenieOne": {
+      "type": "http",
+      "url": "https://dbc-a9cefd79-7c0a.cloud.databricks.com/ai-gateway/mcp-services/system.ai.genie_one_mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:databricks-pat}"
+      }
+    },
+    "databricksSql": {
+      "type": "http",
+      "url": "https://dbc-a9cefd79-7c0a.cloud.databricks.com/api/2.0/mcp/sql",
+      "headers": {
+        "Authorization": "Bearer ${input:databricks-pat}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "id": "salesforce-client-id",
+      "type": "promptString",
+      "description": "Salesforce External Client App consumer key",
+      "password": false
+    },
+    {
+      "id": "databricks-pat",
+      "type": "promptString",
+      "description": "Short-lived token for a least-privilege Databricks principal",
+      "password": true
+    }
+  ]
+}

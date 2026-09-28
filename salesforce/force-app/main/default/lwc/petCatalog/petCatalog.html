@@ -1,0 +1,106 @@
+<template>
+    <main class="catalog-shell">
+        <header class="hero">
+            <p class="eyebrow">VIRTUAL PET ADOPTION CENTER <span>PUBLIC DATA PREVIEW</span></p>
+            <div class="hero-layout">
+                <div>
+                    <h1>Small characters.<br /><em>Big personalities.</em></h1>
+                    <p class="intro">Meet the residents and explore how temperament, status, and application interest sit side by side.</p>
+                </div>
+                <aside class="data-note">
+                    <span class="note-mark" aria-hidden="true">i</span>
+                    <p>Demonstration dataset only. No real pet, adopter, or customer records are shown.</p>
+                </aside>
+            </div>
+            <div class="metric-strip" aria-label="Dataset summary">
+                <div><strong>{totalCount}</strong><span>synthetic profiles</span></div>
+                <div><strong>{availableCount}</strong><span>available now</span></div>
+                <div><strong>{highChaosCount}</strong><span>chaos 9+</span></div>
+                <div><strong>{applicationTotal}</strong><span>applications</span></div>
+            </div>
+        </header>
+
+        <section class="browse" aria-labelledby="browse-heading">
+            <div class="browse-heading">
+                <div>
+                    <p class="eyebrow">THE ROSTER</p>
+                    <h2 id="browse-heading">Find your kind of chaos</h2>
+                </div>
+                <p class="result-count">{resultCountLabel}</p>
+            </div>
+
+            <div class="filters">
+                <lightning-input
+                    type="search"
+                    label="Search pets"
+                    placeholder="Name, species, or breed"
+                    value={searchTerm}
+                    onchange={handleSearch}
+                ></lightning-input>
+                <lightning-combobox
+                    name="status"
+                    label="Status"
+                    value={statusFilter}
+                    options={statusOptions}
+                    onchange={handleStatusChange}
+                ></lightning-combobox>
+                <lightning-combobox
+                    name="sort"
+                    label="Sort by"
+                    value={sortBy}
+                    options={sortOptions}
+                    onchange={handleSortChange}
+                ></lightning-combobox>
+            </div>
+
+            <template lwc:if={isLoading}>
+                <div class="message" role="status">Loading the roster…</div>
+            </template>
+            <template lwc:elseif={errorMessage}>
+                <div class="message error" role="alert">{errorMessage}</div>
+            </template>
+            <template lwc:elseif={hasPets}>
+                <div class="pet-grid">
+                    <template for:each={visiblePets} for:item="pet">
+                        <article class="pet-card" key={pet.id}>
+                            <div class="card-topline">
+                                <span class="species-label">{pet.species} <span aria-hidden="true">/</span> {pet.breed}</span>
+                                <span class={pet.statusClass}>{pet.status}</span>
+                            </div>
+                            <h3>{pet.name}</h3>
+                            <p class="age-line">{pet.age} years old <span aria-hidden="true">·</span> {pet.energy} energy</p>
+
+                            <div class="traits">
+                                <div class="trait-row">
+                                    <span>Chaos</span>
+                                    <strong>{pet.chaos}<small> / 10</small></strong>
+                                </div>
+                                <div class="meter" aria-hidden="true"><span class={pet.chaosClass} style={pet.chaosStyle}></span></div>
+                                <div class="trait-row">
+                                    <span>Behavior risk</span>
+                                    <strong>{pet.behaviorRisk}<small> / 100</small></strong>
+                                </div>
+                                <div class="trait-row bottom-row">
+                                    <span>Good with kids</span>
+                                    <strong>{pet.goodWithKids}</strong>
+                                </div>
+                            </div>
+
+                            <footer class="card-footer">
+                                <span>Application interest</span>
+                                <strong>{pet.applicationCount}</strong>
+                            </footer>
+                        </article>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="message">No pets match these filters.</div>
+            </template>
+        </section>
+
+        <footer class="site-footer">
+            Synthetic values are for experiment use. Chaos and behavior risk are descriptive demo fields, not adoption recommendations.
+        </footer>
+    </main>
+</template>

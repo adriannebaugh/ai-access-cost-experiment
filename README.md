@@ -40,7 +40,7 @@ Experiment paths:
 1. `probe-databricks` runs a fixed read-only identity/session query through the Databricks SQL Connector.
 2. `probe-salesforce` reads REST API versions and API limits; it does not read or modify business records.
 3. Run the same prompts through Genie and separately capture Genie-specific usage and underlying compute.
-4. Add MCP only to evaluate reusable, governed tool discovery and cross-tool reasoning.
+4. Compare Databricks Genie One MCP, Databricks SQL MCP, and Salesforce Headless 360 MCP for governed tool access and cross-system reasoning.
 5. Use Playwright only for visual verification or evidence capture, not normal data access.
 
 Keep each path's identity, permissions, allowed operations, audit evidence, retries, and human review explicit in run records or accompanying experiment notes.
@@ -54,6 +54,16 @@ For Databricks, use `DATABRICKS_SERVER_HOSTNAME` and `DATABRICKS_HTTP_PATH` from
 For Salesforce, use `SALESFORCE_INSTANCE_URL` returned by OAuth, not the Lightning browser URL, and a short-lived OAuth access token in `SALESFORCE_ACCESS_TOKEN`. The probe calls only the REST version-discovery and limits endpoints. It records API operations and any daily API request limits returned, but not a dollar price.
 
 Run `access-cost probe-databricks` and `access-cost probe-salesforce` to verify connections. Both append records to the same JSONL ledger. The URLs alone are not authentication, and the initial probe does not query pet/adopter records. Databricks warehouse, Salesforce OAuth setup, source object/table names, and read permissions must be configured before running business questions against live systems. If billing data is unavailable, cost remains unknown; the probes do not infer price from API counts or elapsed time.
+
+## MCP Client Setup
+
+Workspace-level VS Code remote MCP configuration is in `.vscode/mcp.json`. It registers three managed endpoints: Salesforce Headless 360, Databricks Genie One (`system.ai.genie_one_mcp`), and Databricks SQL (`dbsql`). The Databricks workspace currently reports both Databricks services as Active in Unity Gateway.
+
+When VS Code starts a server, it securely prompts for the Salesforce External Client App consumer key and a Databricks personal access token. These values are not stored in the repository. Use a short-lived Databricks token for local testing only, issued to a principal whose Unity Catalog and SQL warehouse grants are limited to the synthetic experiment data. Replace it with an approved OAuth setup for longer-lived or unattended use.
+
+Before starting Salesforce Headless 360, a Salesforce admin must enable the MCP service, create an External Client App, and grant a least-privilege read-only permission set. The VS Code OAuth callback must be allowed by that app. Headless 360 can expose tools capable of writes, so disable mutating tools in VS Code and enforce read-only permissions in Salesforce itself; the client config alone is not a write boundary. The current Salesforce page is not proof that Headless 360 is enabled.
+
+Use **MCP: List Servers** in VS Code to start the endpoints and complete sign-in. Confirm the listed tools and restrict them before using them in a chat. Databricks Genie and SQL MCP usage can incur serverless SQL or SQL warehouse charges. MCP calls are not automatically added to `.experiment/runs.jsonl`; record their run IDs, tool calls, retries, latency, and billing evidence in the experiment ledger. Until a platform meter or bill is captured, leave dollar cost unknown.
 
 ## Repository Guidance
 
