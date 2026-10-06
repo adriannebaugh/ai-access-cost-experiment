@@ -1,4 +1,4 @@
-"""Synthetic next-phase data for the Colorado expansion scenario."""
+"""Synthetic next-phase data for the Colorado and national coverage scenarios."""
 
 from __future__ import annotations
 
@@ -29,7 +29,6 @@ COLORADO_COUNTIES = [
     "Eagle",
     "Elbert",
     "El Paso",
-    "Denver",
     "Fremont",
     "Garfield",
     "Gilpin",
@@ -74,6 +73,60 @@ COLORADO_COUNTIES = [
     "Yuma",
 ]
 
+US_STATES = [
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "District of Columbia",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
+]
+
 PHASE_TWO_AGENCIES = [
     ("agency_001", "Denver Metro Adoption", "Denver", "Denver", "2026-01-10"),
     ("agency_002", "North Front Range Rescue", "Boulder", "Boulder", "2026-01-18"),
@@ -91,6 +144,29 @@ PHASE_TWO_AGENCIES = [
     ("agency_014", "Southeast Network", "Lamar", "Prowers", "2026-10-19"),
     ("agency_015", "Canyon Country Adoption", "Montrose", "Montrose", "2026-11-06"),
     ("agency_016", "Plains to Peaks", "Fort Morgan", "Morgan", "2026-11-22"),
+]
+
+NATIONAL_AGENCIES = [
+    ("agency_101", "Pacific Northwest Network", "Seattle", "Washington", "2026-06-01"),
+    ("agency_102", "Cascade Valley Center", "Portland", "Oregon", "2026-06-15"),
+    ("agency_103", "Golden State Homes", "Los Angeles", "California", "2026-06-30"),
+    ("agency_104", "Desert Horizon Rescue", "Phoenix", "Arizona", "2026-07-06"),
+    ("agency_105", "Mountain West Collective", "Denver", "Colorado", "2026-07-13"),
+    ("agency_106", "Great Plains Haven", "Omaha", "Nebraska", "2026-07-20"),
+    ("agency_107", "Lake Shore Adoption", "Chicago", "Illinois", "2026-07-27"),
+    ("agency_108", "Midwest Habitat Network", "Detroit", "Michigan", "2026-08-03"),
+    ("agency_109", "Atlantic Coast Bridge", "Boston", "Massachusetts", "2026-08-10"),
+    ("agency_110", "Sunrise South Homes", "Atlanta", "Georgia", "2026-08-17"),
+    ("agency_111", "Gulf Coast Pairing", "Houston", "Texas", "2026-08-24"),
+    ("agency_112", "Southeast River Rescue", "Nashville", "Tennessee", "2026-08-31"),
+    ("agency_113", "Appalachian Care", "Charleston", "West Virginia", "2026-09-07"),
+    ("agency_114", "Capital Region Adoption", "Washington", "District of Columbia", "2026-09-14"),
+    ("agency_115", "Chesapeake Homes", "Baltimore", "Maryland", "2026-09-21"),
+    ("agency_116", "Northern Woods Center", "Minneapolis", "Minnesota", "2026-09-28"),
+    ("agency_117", "Heartland Safe Haven", "Kansas City", "Missouri", "2026-10-05"),
+    ("agency_118", "Pine Ridge Pairings", "Bismarck", "North Dakota", "2026-10-12"),
+    ("agency_119", "Frontier Renewal", "Boise", "Idaho", "2026-10-19"),
+    ("agency_120", "High Plains Transfer", "Cheyenne", "Wyoming", "2026-10-26"),
 ]
 
 COUNTY_COVERAGE_2026_06_30 = {
@@ -193,6 +269,15 @@ CREATURE_SEEDS = [
     ("Sol", "Dog", "Montrose", "agency_015", "2026-11-07", "Available"),
     ("Poppy", "Cat", "Fort Morgan", "agency_016", "2026-11-23", "Available"),
 ]
+
+
+def _national_coverage_map() -> dict[str, str]:
+    """Create a deterministic one-agency-per-state coverage map for the national model."""
+    map_by_state: dict[str, str] = {}
+    for index, state_name in enumerate(US_STATES):
+        agency_id = NATIONAL_AGENCIES[index % len(NATIONAL_AGENCIES)][0]
+        map_by_state[state_name] = agency_id
+    return map_by_state
 
 
 def create_phase_two_database(connection: sqlite3.Connection) -> None:
@@ -300,12 +385,73 @@ def create_phase_two_database(connection: sqlite3.Connection) -> None:
         )
 
 
+def create_national_coverage_database(connection: sqlite3.Connection) -> None:
+    """Create a deterministic national-scale coverage dataset for the next design milestone."""
+    connection.executescript(
+        """
+        CREATE TABLE geography_reference (
+            geography_name TEXT PRIMARY KEY,
+            geography_type TEXT NOT NULL,
+            parent_geography TEXT,
+            is_in_scope INTEGER NOT NULL
+        );
+
+        CREATE TABLE agencies (
+            agency_id TEXT PRIMARY KEY,
+            agency_name TEXT NOT NULL,
+            city TEXT NOT NULL,
+            state_name TEXT NOT NULL,
+            launch_date TEXT NOT NULL
+        );
+
+        CREATE TABLE agency_service_area (
+            agency_id TEXT NOT NULL,
+            geography_name TEXT NOT NULL,
+            active_from TEXT NOT NULL,
+            active_to TEXT,
+            PRIMARY KEY (agency_id, geography_name, active_from),
+            FOREIGN KEY (agency_id) REFERENCES agencies(agency_id)
+        );
+        """
+    )
+
+    for state_name in US_STATES:
+        connection.execute(
+            "INSERT INTO geography_reference VALUES (?, ?, ?, ?)",
+            (state_name, "state", "United States", 1),
+        )
+
+    for agency_id, agency_name, city, state_name, launch_date in NATIONAL_AGENCIES:
+        connection.execute(
+            "INSERT INTO agencies VALUES (?, ?, ?, ?, ?)",
+            (agency_id, agency_name, city, state_name, launch_date),
+        )
+
+    coverage_map = _national_coverage_map()
+    for state_name in US_STATES:
+        agency_id = coverage_map[state_name]
+        connection.execute(
+            "INSERT INTO agency_service_area VALUES (?, ?, ?, ?)",
+            (agency_id, state_name, "2026-12-31", None),
+        )
+
+
 def generate_phase_two_dataset(path: str | Path) -> Path:
     """Create the SQLite phase-two dataset at the requested destination."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(output) as connection:
         create_phase_two_database(connection)
+        connection.commit()
+    return output
+
+
+def generate_national_coverage_dataset(path: str | Path) -> Path:
+    """Create the SQLite national dataset at the requested destination."""
+    output = Path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(output) as connection:
+        create_national_coverage_database(connection)
         connection.commit()
     return output
 
@@ -331,12 +477,28 @@ def summarize_phase_two(connection: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+def summarize_national_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
+    states = connection.execute("SELECT COUNT(*) FROM geography_reference").fetchone()[0]
+    agency_count = connection.execute("SELECT COUNT(*) FROM agencies").fetchone()[0]
+    service_areas = connection.execute("SELECT COUNT(*) FROM agency_service_area").fetchone()[0]
+    return {
+        "state_count": states,
+        "agency_count": agency_count,
+        "service_area_rows": service_areas,
+    }
+
+
 __all__ = [
     "COLORADO_COUNTIES",
+    "US_STATES",
     "PHASE_TWO_AGENCIES",
+    "NATIONAL_AGENCIES",
     "COUNTY_COVERAGE_2026_06_30",
     "COUNTY_COVERAGE_2026_12_31",
     "create_phase_two_database",
+    "create_national_coverage_database",
     "generate_phase_two_dataset",
+    "generate_national_coverage_dataset",
     "summarize_phase_two",
+    "summarize_national_coverage",
 ]
