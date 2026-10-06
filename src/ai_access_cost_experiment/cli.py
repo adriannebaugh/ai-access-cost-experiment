@@ -10,6 +10,10 @@ from pathlib import Path
 
 from ai_access_cost_experiment.dataset import create_database
 from ai_access_cost_experiment.ledger import append_record, read_records, summarize
+from ai_access_cost_experiment.phase_two import (
+    generate_phase_two_dataset,
+    summarize_phase_two,
+)
 from ai_access_cost_experiment.platforms import (
     PlatformConfigurationError,
     PlatformProbeError,
@@ -76,6 +80,12 @@ def main() -> None:
     salesforce_parser.add_argument(
         "--ledger", type=Path, default=Path(".experiment/runs.jsonl")
     )
+    phase_two_parser = subparsers.add_parser(
+        "phase-two", help="generate the synthetic Colorado expansion dataset"
+    )
+    phase_two_parser.add_argument(
+        "--output", type=Path, default=Path(".experiment/phase_two.sqlite")
+    )
     args = parser.parse_args()
 
     try:
@@ -89,6 +99,11 @@ def main() -> None:
         elif args.command == "probe-salesforce":
             record = probe_salesforce(args.ledger)
             print(json.dumps(record["answer"], indent=2))
+        elif args.command == "phase-two":
+            output_path = generate_phase_two_dataset(args.output)
+            with sqlite3.connect(output_path) as connection:
+                summary = summarize_phase_two(connection)
+            print(json.dumps(summary, indent=2))
     except (PlatformConfigurationError, PlatformProbeError) as error:
         parser.exit(2, f"error: {error}\n")
 
